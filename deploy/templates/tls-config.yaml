@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gitlab-tls
+data:
+  registry-crt: |+
+    {{ .Values.certificates.registry.crt | b64dec | indent 4 | trimPrefix "    " }}
+  registry-key: |+
+    {{ .Values.certificates.registry.key | b64dec | indent 4 | trimPrefix "    " }}
+  rootcertbundle: |+
+    {{ .Values.certificates.https.crt | b64dec | indent 4 | trimPrefix "    " }}

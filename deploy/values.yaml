@@ -1,0 +1,49 @@
+namespace: gitlab-system
+
+image:
+  repository: gitlab/gitlab-ee
+  tag: 15.7.1-ee.0
+
+config:
+  timezone: "UTC"
+
+service:
+  https:
+    name: https
+    protocol: TCP
+    port: 80
+    # the https certificate must be generated for this domain!
+    ingress: gitlab.mydomain.tld
+  registry:
+    name: registry
+    protocol: TCP
+    port: 5000
+    # the registry certificate must be generated for this domain!
+    ingress: registry.gitlab.mydomain.tld
+  ssh:
+    name: ssh
+    protocol: TCP
+    port: 22
+
+network:
+  ip: "192.168.178.40"
+
+resources:
+  requests:
+    cpu: 1
+    memory: 3Gi
+  limits:
+    cpu: 2
+    memory: 6Gi
+
+storage:
+  config: 250Mi
+  data: 50Gi
+
+certificates:
+  https:
+    crt: "<base64 encoded certificate string>"
+    key: "<base64 encoded key string>"
+  registry:
+    crt: "<base64 encoded certificate string>"
+    key: "<base64 encoded key string>"

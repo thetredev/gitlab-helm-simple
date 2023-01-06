@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gitlab-rb
+data:
+  gitlab.rb: |
+    # General
+    ## Time Zone
+    gitlab_rails['time_zone'] = '{{ .Values.config.timezone }}'
+
+    external_url 'https://{{ .Values.service.https.ingress }}'
+    nginx['listen_port'] = 80
+    nginx['listen_https'] = false
+
+    # Registry
+    registry['enable'] = true
+
+    registry_external_url 'https://{{ .Values.service.registry.ingress }}'
+    gitlab_rails['registry_issuer'] = "omnibus-gitlab-issuer"
+
+    registry['internal_key'] = "{{ .Values.certificates.https.key | b64dec | indent 4 | trimPrefix "    " }}"
+    registry['rootcertbundle'] = "/etc/gitlab/ssl/rootcertbundle.{{ .Values.service.https.ingress }}.crt"
+
+    ## Enable deletion of images
+    registry['storage_delete_enabled'] = true
+
+    ## Expose registry to host
+    registry['registry_http_addr'] = "0.0.0.0:{{ .Values.service.registry.port }}"
+
+    # Disable KAS
+    gitlab_kas['enable'] = false
+
+    # Memory optimizations
+    ## Not many people will use the web interface, so use the least amount of workers possible
+    puma['worker_processes'] = 0
+    sidekiq['max_concurrency'] = 10
+
+    ## Optimize gitaly
+    gitaly['ruby_max_rss'] = 200_000_000
+    gitaly['concurrency'] = [
+      {
+        'rpc' => "/gitaly.SmartHTTPService/PostReceivePack",
+        'max_per_repo' => 3
+      }, {
+        'rpc' => "/gitaly.SSHService/SSHUploadPack",
+        'max_per_repo' => 3
+      }
+    ]
+
+    ## Unfortunately we can't apply these for Docker installs
+    # gitaly['cgroups_count'] = 2
+    # gitaly['cgroups_mountpoint'] = '/sys/fs/cgroup'
+    # gitaly['cgroups_hierarchy_root'] = 'gitaly'
+    # gitaly['cgroups_memory_enabled'] = true
+    # gitaly['cgroups_memory_limit'] = 500000
+    # gitaly['cgroups_cpu_enabled'] = true
+    # gitaly['cgroups_cpu_shares'] = 512
+
+    gitaly['env'] = {
+      'GITALY_COMMAND_SPAWN_MAX_PARALLEL' => '2',
+      'LD_PRELOAD' => '/opt/gitlab/embedded/lib/libjemalloc.so',
+      'MALLOC_CONF' => 'dirty_decay_ms:1000,muzzy_decay_ms:1000'
+    }
+
+    ## Optimize rails
+    gitlab_rails['env'] = {
+      'MALLOC_CONF' => 'dirty_decay_ms:1000,muzzy_decay_ms:1000'
+    }
+
+    ## Who needs monitoring anyway?!
+    ## Well, at least the GitLab internal one...
+    prometheus_monitoring['enable'] = false
+
+    # LDAP
+    gitlab_rails['ldap_enabled'] = false

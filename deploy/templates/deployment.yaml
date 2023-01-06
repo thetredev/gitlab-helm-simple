@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    com.github.thetredev.gitlab-helm-simple.service: gitlab
+  name: gitlab
+spec:
+  selector:
+    matchLabels:
+      com.github.thetredev.gitlab-helm-simple.service: gitlab
+  template:
+    metadata:
+      labels:
+        com.github.thetredev.gitlab-helm-simple.service: gitlab
+    spec:
+      volumes:
+        - name: pv-config
+          persistentVolumeClaim:
+            claimName: pvc-config
+        - name: pv-data
+          persistentVolumeClaim:
+            claimName: pvc-data
+        - name: gitlab-rb
+          configMap:
+            name: gitlab-rb
+        - name: gitlab-tls
+          configMap:
+            name: gitlab-tls
+      containers:
+        - image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          name: gitlab
+          ports:
+            - name: "{{ .Values.service.https.name }}"
+              containerPort: {{ .Values.service.https.port }}
+              protocol: "{{ .Values.service.https.protocol }}"
+            - name: "{{ .Values.service.registry.name }}"
+              containerPort: {{ .Values.service.registry.port }}
+              protocol: "{{ .Values.service.registry.protocol }}"
+            - name: "{{ .Values.service.ssh.name }}"
+              containerPort: {{ .Values.service.ssh.port }}
+              protocol: "{{ .Values.service.ssh.protocol }}"
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: "{{ .Values.resources.requests.memory }}"
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: "{{ .Values.resources.limits.memory }}"
+          volumeMounts:
+            - mountPath: /etc/gitlab
+              name: pv-config
+            - mountPath: /var/opt/gitlab
+              name: pv-data
+            - name: gitlab-rb
+              mountPath: /etc/gitlab/gitlab.rb
+              subPath: gitlab.rb
+            - name: gitlab-tls
+              mountPath: "/etc/gitlab/ssl/rootcertbundle.{{ .Values.service.https.ingress }}.crt"
+              subPath: rootcertbundle
+            - name: gitlab-tls
+              mountPath: "/etc/gitlab/ssl/{{ .Values.service.registry.ingress }}.crt"
+              subPath: registry-crt
+            - name: gitlab-tls
+              mountPath: "/etc/gitlab/ssl/{{ .Values.service.registry.ingress }}.key"
+              subPath: registry-key
+          securityContext:
+            allowPrivilegeEscalation: false
+      restartPolicy: Always
