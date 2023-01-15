@@ -2,7 +2,7 @@ namespace: gitlab-system
 
 image:
   repository: gitlab/gitlab-ee
-  tag: 15.7.1-ee.0
+  tag: 15.7.3-ee.0
 
 config:
   timezone: "UTC"
