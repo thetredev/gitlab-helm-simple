@@ -38,7 +38,7 @@ resources:
 
 storage:
   config: 250Mi
-  data: 50Gi
+  data: 20Gi
 
 certificates:
   https:
