@@ -17,3 +17,12 @@ Have a look at the [values.yaml](deploy/values.yaml) file.
 I'm using the [Kubernetes NGINX Ingress Controller](https://github.com/kubernetes/ingress-nginx) on Kubernetes v1.25. I couldn't get [exposing the SSH TCP service](https://github.com/kubernetes/ingress-nginx/blob/main/docs/user-guide/exposing-tcp-udp-services.md) to work, so I'm relying on a `LoadBalancer` setup in [the service resource](deploy/templates/service.yaml). This will require some DNS/NAT magic on your end to make cloning and pusing repositories via SSH and URL rather than IP work as expected. I'm not a networking expert so I don't recommend that at all. It just works for my specific setup at the moment.
 
 You might consider using the [Kubernetes Gateway API](https://gateway-api.sigs.k8s.io) for exposing the SSH port. I'm not very familiar with that and I'm waiting for the API to graduate out of beta before using it.
+
+Until then: my network setup is basically the following:
+```console
+DNS: ingress url => ingress controller load balancer IP
+DNS: git.<ingress url> => gitlab load balancer IP
+gitlab.rb: gitlab_rails['gitlab_ssh_host'] = 'git.<ingress url>'
+```
+
+This way, you can clone/pull/push via HTTP(S) on the ingress controller load balancer IP (perfect for GitOps) plus clone/pull/push via SSH on the gitlab load balancer IP (perfect for normal git operations).
